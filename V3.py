@@ -97,47 +97,27 @@ def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
 
-    # ฟอนต์ไทย (ต้องมีไฟล์ THSarabunNew.ttf ในโฟลเดอร์เดียวกัน)
+    # โหลดฟอนต์ไทย (ต้องมีไฟล์ในโฟลเดอร์เดียวกัน)
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
-    pdf.set_font("THSarabunNew", "", 16)
+    pdf.add_font("THSarabunNew", "B", "THSarabunNew Bold.ttf", uni=True)
+    pdf.add_font("THSarabunNew", "I", "THSarabunNew Italic.ttf", uni=True)
+    pdf.add_font("THSarabunNew", "BI", "THSarabunNew BoldItalic.ttf", uni=True)
 
     # หัวกระดาษ
     pdf.set_font("THSarabunNew", "B", 20)
-    pdf.cell(0, 10, "📋 ใบสั่งงาน บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
+    pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
     pdf.ln(5)
 
-    # ข้อมูลฟอร์ม (จัดเป็นตาราง)
-    col_width = 50
-    row_height = 8
-    page_width = 210  # A4 กว้าง 210 mm
-    margin = 10
-    value_width = page_width - margin * 2 - col_width
-
-    fields = [
-        ("ID", row["id"]),
-        ("มอบหมายให้", row["assigned_to"]),
-        ("วันที่สั่งงาน", row["order_date"]),
-        ("เวลา", row["time"]),
-        ("ติดต่อ", row["contact"]),
-        ("บริษัท", row["company"]),
-        ("แผนก", row["department"]),
-        ("ที่อยู่", row["address"]),
-        ("โทร", row["phone"]),
-        ("ผู้สั่งงาน", row["ordered_by"]),
-        ("ผู้รับ", row["receiver"]),
-        ("วันที่รับงาน", row["receive_date"]),
-        ("Checklist", row["checklist"]),
-        ("หมายเหตุ", row["remark"]),
-    ]
-
     pdf.set_font("THSarabunNew", "", 16)
-    for label, value in fields:
-        # cell สำหรับ label
-        pdf.cell(col_width, row_height, str(label), border=1)
-        # multi_cell สำหรับ value (ใช้ width ชัดเจน)
-        x, y = pdf.get_x(), pdf.get_y()
-        pdf.multi_cell(value_width, row_height, str(value), border=1)
-        pdf.set_xy(x + value_width, y)  # set ตำแหน่ง cursor กลับไปข้าง label
+
+    # จัดเป็นตาราง 2 คอลัมน์ (หัวข้อ | ค่า)
+    col_width1 = 50
+    col_width2 = 130
+    row_height = 8
+
+    for col, value in row.items():
+        pdf.cell(col_width1, row_height, str(col), border=1)
+        pdf.multi_cell(col_width2, row_height, str(value), border=1)
 
     return pdf.output(dest="S").encode("latin-1")
 
