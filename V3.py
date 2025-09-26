@@ -2,8 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import date
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
+from fpdf import FPDF
 import io
 
 # ===== ตั้งค่าหน้า =====
@@ -91,41 +90,38 @@ with st.form("work_order_form", clear_on_submit=True):
 st.markdown("---")
 st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-query = "SELECT * FROM work_orders ORDER BY id DESC"
-df = pd.read_sql_query(query, conn)
+df = pd.read_sql_query("SELECT * FROM work_orders ORDER BY id DESC", conn)
 
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
     # ===== ฟังก์ชันสร้าง PDF =====
     def generate_pdf(row):
-        buffer = io.BytesIO()
-        c = canvas.Canvas(buffer, pagesize=A4)
+        pdf = FPDF()
+        pdf.add_page()
 
-        # ตั้งค่า font (ใช้ Helvetica แทน)
-        c.setFont("Helvetica", 12)
+        # ใช้ core font DejaVuSans สำหรับภาษาไทย
+        pdf.add_font("DejaVu", "", fname="DejaVuSans.ttf", uni=True)
+        pdf.set_font("DejaVu", size=12)
 
-        # Header
-        c.drawString(200, 800, "📋 ใบสั่งงาน")
-        c.drawString(180, 780, "บริษัท อินะบาตะ ไทย จำกัด")
-        y = 750
+        pdf.cell(200, 10, txt="📋 ใบสั่งงาน - บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
+        pdf.ln(10)
 
         for col in row.index:
-            text = f"{col}: {row[col]}"
-            c.drawString(50, y, text)
-            y -= 20
+            pdf.multi_cell(0, 10, txt=f"{col}: {row[col]}")
 
-        c.save()
-        buffer.seek(0)
-        return buffer
+        pdf_output = io.BytesIO()
+        pdf_bytes = pdf.output(dest="S").encode("latin1", "ignore")
+        pdf_output.write(pdf_bytes)
+        pdf_output.seek(0)
+        return pdf_output
 
-    # ===== ปุ่มพิมพ์ =====
     latest_row = df.iloc[0]
-    pdf_buffer = generate_pdf(latest_row)
+    pdf_file = generate_pdf(latest_row)
 
     st.download_button(
         label="🖨️ พิมพ์ใบสั่งงาน (PDF)",
-        data=pdf_buffer,
+        data=pdf_file,
         file_name="work_order.pdf",
         mime="application/pdf"
     )
