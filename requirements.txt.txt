@@ -1,4 +1,9 @@
 streamlit
-pandas
 fpdf
-sqlite3-binary
+pandas
+openpyxl
+xlsxwriter
+python-dateutil
+streamlit
+pandas
+fpdf2
