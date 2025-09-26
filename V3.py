@@ -102,12 +102,16 @@ def generate_pdf(row):
     pdf.set_font("THSarabunNew", "", 16)
 
     # หัวกระดาษ
+    pdf.set_font("THSarabunNew", "B", 20)
     pdf.cell(0, 10, "📋 ใบสั่งงาน บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
     pdf.ln(5)
 
     # ข้อมูลฟอร์ม (จัดเป็นตาราง)
     col_width = 50
     row_height = 8
+    page_width = 210  # A4 กว้าง 210 mm
+    margin = 10
+    value_width = page_width - margin * 2 - col_width
 
     fields = [
         ("ID", row["id"]),
@@ -126,11 +130,15 @@ def generate_pdf(row):
         ("หมายเหตุ", row["remark"]),
     ]
 
+    pdf.set_font("THSarabunNew", "", 16)
     for label, value in fields:
+        # cell สำหรับ label
         pdf.cell(col_width, row_height, str(label), border=1)
-        pdf.multi_cell(0, row_height, str(value), border=1)
+        # multi_cell สำหรับ value (ใช้ width ชัดเจน)
+        x, y = pdf.get_x(), pdf.get_y()
+        pdf.multi_cell(value_width, row_height, str(value), border=1)
+        pdf.set_xy(x + value_width, y)  # set ตำแหน่ง cursor กลับไปข้าง label
 
-    # ✅ คืนค่าเป็น bytes
     return pdf.output(dest="S").encode("latin-1")
 
 # ===== ปุ่มพิมพ์ / ดาวน์โหลด PDF =====
