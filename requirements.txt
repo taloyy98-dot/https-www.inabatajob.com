@@ -4,3 +4,7 @@ pandas
 openpyxl
 xlsxwriter
 python-dateutil
+streamlit
+pandas
+fpdf2
+
