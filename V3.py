@@ -99,41 +99,39 @@ def generate_pdf(row):
 
     # ฟอนต์ไทย (ต้องมีไฟล์ THSarabunNew.ttf ในโฟลเดอร์เดียวกัน)
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
-    pdf.set_font("THSarabunNew", size=16)
+    pdf.set_font("THSarabunNew", "", 16)
 
-    # ===== Header =====
-    pdf.set_font("THSarabunNew", "B", 20)
-    pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
+    # หัวกระดาษ
+    pdf.cell(0, 10, "📋 ใบสั่งงาน บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
     pdf.ln(5)
 
-    pdf.set_font("THSarabunNew", size=14)
+    # ข้อมูลฟอร์ม (จัดเป็นตาราง)
+    col_width = 50
+    row_height = 8
 
-    # ===== Mapping ชื่อคอลัมน์เป็นภาษาไทย =====
-    labels = {
-        "id": "เลขที่",
-        "assigned_to": "มอบหมายให้",
-        "order_date": "วันที่สั่งงาน",
-        "time": "เวลา",
-        "contact": "ติดต่อ",
-        "company": "บริษัท",
-        "department": "แผนก",
-        "address": "ที่อยู่",
-        "phone": "โทร",
-        "ordered_by": "ผู้สั่งงาน",
-        "receiver": "ผู้รับ",
-        "receive_date": "วันที่ (รับงาน)",
-        "checklist": "รายการ",
-        "remark": "หมายเหตุ"
-    }
+    fields = [
+        ("ID", row["id"]),
+        ("มอบหมายให้", row["assigned_to"]),
+        ("วันที่สั่งงาน", row["order_date"]),
+        ("เวลา", row["time"]),
+        ("ติดต่อ", row["contact"]),
+        ("บริษัท", row["company"]),
+        ("แผนก", row["department"]),
+        ("ที่อยู่", row["address"]),
+        ("โทร", row["phone"]),
+        ("ผู้สั่งงาน", row["ordered_by"]),
+        ("ผู้รับ", row["receiver"]),
+        ("วันที่รับงาน", row["receive_date"]),
+        ("Checklist", row["checklist"]),
+        ("หมายเหตุ", row["remark"]),
+    ]
 
-    # ===== แสดงเป็นตาราง =====
-    for col, label in labels.items():
-        if col in row:
-            value = str(row[col]) if pd.notna(row[col]) else ""
-            pdf.cell(50, 10, label, border=1)   # คอลัมน์หัวข้อ
-            pdf.multi_cell(0, 10, value, border=1)  # คอลัมน์ข้อมูล
+    for label, value in fields:
+        pdf.cell(col_width, row_height, str(label), border=1)
+        pdf.multi_cell(0, row_height, str(value), border=1)
 
-    return bytes(pdf.output(dest="S").encode("latin1"))
+    # ✅ คืนค่าเป็น bytes
+    return pdf.output(dest="S").encode("latin-1")
 
 # ===== ปุ่มพิมพ์ / ดาวน์โหลด PDF =====
 if not df.empty:
