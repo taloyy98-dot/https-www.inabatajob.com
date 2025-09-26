@@ -88,7 +88,24 @@ with st.form("work_order_form", clear_on_submit=True):
 st.markdown("---")
 st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-df = pd.read_sql_query("SELECT * FROM work_orders ORDER BY id DESC", conn)
+query = """
+SELECT 
+    ordered_by AS 'ผู้สั่งงาน',
+    assigned_to AS 'มอบหมายให้',
+    order_date AS 'วันที่สั่งงาน',
+    time AS 'เวลา',
+    contact AS 'ติดต่อ',
+    company AS 'บริษัท',
+    department AS 'แผนก',
+    address AS 'ที่อยู่',
+    phone AS 'โทร',
+    receiver AS 'ผู้รับ',
+    receive_date AS 'วันที่รับงาน',
+    checklist AS 'เช็คลิสต์',
+    remark AS 'หมายเหตุ'
+FROM work_orders
+ORDER BY id DESC
+"""
+
+df = pd.read_sql_query(query, conn)
 st.dataframe(df, use_container_width=True)
-
-
