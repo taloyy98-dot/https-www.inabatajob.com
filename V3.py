@@ -85,20 +85,12 @@ with st.form("work_order_form", clear_on_submit=True):
         conn.commit()
         st.success("✅ บันทึกข้อมูลเรียบร้อยแล้ว!")
 
-# ===== ดูข้อมูลที่บันทึกไว้ =====
-st.markdown("---")
-st.subheader("📑 ข้อมูลที่บันทึกไว้")
-
-query = "SELECT * FROM work_orders ORDER BY id DESC"
-df = pd.read_sql_query(query, conn)
-st.dataframe(df, use_container_width=True)
-
 # ===== ฟังก์ชันสร้าง PDF =====
 def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
 
-    # โหลดฟอนต์ไทย
+    # ฟอนต์ไทย (ต้องมีไฟล์ THSarabunNew.ttf ในโฟลเดอร์เดียวกัน)
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
     pdf.set_font("THSarabunNew", size=16)
 
@@ -109,16 +101,30 @@ def generate_pdf(row):
         text = f"{col}: {row[col]}"
         pdf.multi_cell(w=190, h=8, txt=text)
 
+    # ✅ คืนค่า bytes โดยตรง
     return pdf.output(dest="S").encode("latin-1")
 
-# ===== ปุ่มพิมพ์ (ดาวน์โหลด PDF) =====
-if not df.empty:
-    latest_row = df.iloc[0]  # เอา row ล่าสุด
-    pdf_file = generate_pdf(latest_row)
+# ===== ดูข้อมูลที่บันทึกไว้ =====
+st.markdown("---")
+st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-    st.download_button(
-        label="🖨️ พิมพ์ใบสั่งงาน (PDF)",
-        data=pdf_file,
-        file_name="work_order.pdf",
-        mime="application/pdf"
-    )
+query = "SELECT * FROM work_orders ORDER BY id DESC"
+try:
+    df = pd.read_sql_query(query, conn)
+    st.dataframe(df, use_container_width=True)
+
+    # ปุ่มพิมพ์ PDF จากเรคคอร์ดล่าสุด
+    if not df.empty:
+        latest_row = df.iloc[0]
+
+        if st.button("🖨 พิมพ์ใบสั่งงาน"):
+            pdf_file = generate_pdf(latest_row)
+
+            st.download_button(
+                label="📥 ดาวน์โหลด PDF",
+                data=pdf_file,
+                file_name="work_order.pdf",
+                mime="application/pdf"
+            )
+except Exception as e:
+    st.error(f"⚠️ ไม่สามารถดึงข้อมูลจากฐานข้อมูลได้: {e}")
