@@ -101,19 +101,43 @@ def generate_pdf(row):
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
     pdf.set_font("THSarabunNew", size=16)
 
+    # ===== Header =====
+    pdf.set_font("THSarabunNew", "B", 20)
     pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
-    pdf.ln(10)
+    pdf.ln(5)
 
-    for col in row.index:
-        text = f"{col}: {row[col]}"
-        pdf.multi_cell(w=190, h=8, txt=text)
+    pdf.set_font("THSarabunNew", size=14)
 
-    # คืนค่าเป็น bytes
-    return bytes(pdf.output(dest="S"))
+    # ===== Mapping ชื่อคอลัมน์เป็นภาษาไทย =====
+    labels = {
+        "id": "เลขที่",
+        "assigned_to": "มอบหมายให้",
+        "order_date": "วันที่สั่งงาน",
+        "time": "เวลา",
+        "contact": "ติดต่อ",
+        "company": "บริษัท",
+        "department": "แผนก",
+        "address": "ที่อยู่",
+        "phone": "โทร",
+        "ordered_by": "ผู้สั่งงาน",
+        "receiver": "ผู้รับ",
+        "receive_date": "วันที่ (รับงาน)",
+        "checklist": "รายการ",
+        "remark": "หมายเหตุ"
+    }
+
+    # ===== แสดงเป็นตาราง =====
+    for col, label in labels.items():
+        if col in row:
+            value = str(row[col]) if pd.notna(row[col]) else ""
+            pdf.cell(50, 10, label, border=1)   # คอลัมน์หัวข้อ
+            pdf.multi_cell(0, 10, value, border=1)  # คอลัมน์ข้อมูล
+
+    return bytes(pdf.output(dest="S").encode("latin1"))
 
 # ===== ปุ่มพิมพ์ / ดาวน์โหลด PDF =====
 if not df.empty:
-    latest_row = df.iloc[0]  # ดึงแถวล่าสุด
+    latest_row = df.iloc[0]
     pdf_file = generate_pdf(latest_row)
 
     st.download_button(
