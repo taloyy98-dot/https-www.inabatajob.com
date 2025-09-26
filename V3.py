@@ -18,7 +18,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ===== DB Setup (สร้างไฟล์ SQLite ใน memory / หรือใน repo) =====
+# ===== DB Setup =====
 conn = sqlite3.connect("work_orders.db", check_same_thread=False)
 c = conn.cursor()
 c.execute("""
@@ -90,22 +90,40 @@ st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
 query = """
 SELECT 
-    ordered_by AS 'ผู้สั่งงาน',
-    assigned_to AS 'มอบหมายให้',
-    order_date AS 'วันที่สั่งงาน',
-    time AS 'เวลา',
-    contact AS 'ติดต่อ',
-    company AS 'บริษัท',
-    department AS 'แผนก',
-    address AS 'ที่อยู่',
-    phone AS 'โทร',
-    receiver AS 'ผู้รับ',
-    receive_date AS 'วันที่รับงาน',
-    checklist AS 'เช็คลิสต์',
-    remark AS 'หมายเหตุ'
+    ordered_by,
+    assigned_to,
+    order_date,
+    time,
+    contact,
+    company,
+    department,
+    address,
+    phone,
+    receiver,
+    receive_date,
+    checklist,
+    remark
 FROM work_orders
 ORDER BY id DESC
 """
 
 df = pd.read_sql_query(query, conn)
+
+# เปลี่ยนชื่อหัวตารางเป็นภาษาไทย
+df = df.rename(columns={
+    "ordered_by": "ผู้สั่งงาน",
+    "assigned_to": "มอบหมายให้",
+    "order_date": "วันที่สั่งงาน",
+    "time": "เวลา",
+    "contact": "ติดต่อ",
+    "company": "บริษัท",
+    "department": "แผนก",
+    "address": "ที่อยู่",
+    "phone": "โทร",
+    "receiver": "ผู้รับ",
+    "receive_date": "วันที่รับงาน",
+    "checklist": "เช็คลิสต์",
+    "remark": "หมายเหตุ"
+})
+
 st.dataframe(df, use_container_width=True)
