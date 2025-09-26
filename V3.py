@@ -97,29 +97,24 @@ def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
 
-    # โหลดฟอนต์ไทย (ต้องมีไฟล์ในโฟลเดอร์เดียวกัน)
+    # ฟอนต์ไทย
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
-    pdf.add_font("THSarabunNew", "B", "THSarabunNew Bold.ttf", uni=True)
-    pdf.add_font("THSarabunNew", "I", "THSarabunNew Italic.ttf", uni=True)
-    pdf.add_font("THSarabunNew", "BI", "THSarabunNew BoldItalic.ttf", uni=True)
+    pdf.set_font("THSarabunNew", size=16)
 
-    # หัวกระดาษ
-    pdf.set_font("THSarabunNew", "B", 20)
     pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
     pdf.ln(5)
 
-    pdf.set_font("THSarabunNew", "", 16)
-
-    # จัดเป็นตาราง 2 คอลัมน์ (หัวข้อ | ค่า)
-    col_width1 = 50
-    col_width2 = 130
+    col_width = 50
     row_height = 8
 
     for col, value in row.items():
-        pdf.cell(col_width1, row_height, str(col), border=1)
-        pdf.multi_cell(col_width2, row_height, str(value), border=1)
+        pdf.set_font("THSarabunNew", "B", 14)
+        pdf.cell(col_width, row_height, str(col), border=1)
+        pdf.set_font("THSarabunNew", "", 14)
+        pdf.multi_cell(0, row_height, str(value), border=1)
 
-    return pdf.output(dest="S").encode("latin-1")
+    # ✅ คืนค่า bytes ตรงๆ
+    return pdf.output(dest="S")
 
 # ===== ปุ่มพิมพ์ / ดาวน์โหลด PDF =====
 if not df.empty:
