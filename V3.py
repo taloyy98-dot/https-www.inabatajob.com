@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 from datetime import date
 from fpdf import FPDF
-import base64
+import io
 
 # ===== ตั้งค่าหน้า =====
 st.set_page_config(page_title="ฟอร์มใบสั่งงาน IK", page_icon="📄", layout="centered")
@@ -23,10 +23,8 @@ st.markdown(
 # ===== DB Setup =====
 conn = sqlite3.connect("work_orders.db", check_same_thread=False)
 c = conn.cursor()
-
-c.execute("DROP TABLE IF EXISTS work_orders")  # reset กัน schema error
 c.execute("""
-CREATE TABLE work_orders (
+CREATE TABLE IF NOT EXISTS work_orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     assigned_to TEXT,
     order_date TEXT,
@@ -44,6 +42,26 @@ CREATE TABLE work_orders (
 )
 """)
 conn.commit()
+
+# ===== ฟังก์ชันสร้าง PDF =====
+def generate_pdf(row):
+    pdf = FPDF()
+    pdf.add_page()
+
+    # โหลดฟอนต์ Unicode
+    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
+    pdf.set_font("DejaVu", size=12)
+
+    pdf.cell(200, 10, txt="📋 ใบสั่งงาน", ln=True, align="C")
+    pdf.ln(10)
+
+    for col in row.index:
+        text = f"{col}: {row[col]}"
+        pdf.multi_cell(0, 10, text)
+
+    # แปลง PDF เป็น Bytes
+    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    return io.BytesIO(pdf_bytes)
 
 # ===== ฟอร์มกรอกข้อมูล =====
 with st.form("work_order_form", clear_on_submit=True):
@@ -92,66 +110,21 @@ with st.form("work_order_form", clear_on_submit=True):
 st.markdown("---")
 st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-query = """
-SELECT 
-    id,
-    ordered_by,
-    assigned_to,
-    order_date,
-    time,
-    contact,
-    company,
-    department,
-    address,
-    phone,
-    receiver,
-    receive_date,
-    checklist,
-    remark
-FROM work_orders
-ORDER BY id DESC
-"""
+query = "SELECT * FROM work_orders ORDER BY id DESC"
 df = pd.read_sql_query(query, conn)
 
 if not df.empty:
-    df = df.drop(columns=["id"])
-    df = df.rename(columns={
-        "ordered_by": "ผู้สั่งงาน",
-        "assigned_to": "มอบหมายให้",
-        "order_date": "วันที่สั่งงาน",
-        "time": "เวลา",
-        "contact": "ติดต่อ",
-        "company": "บริษัท",
-        "department": "แผนก",
-        "address": "ที่อยู่",
-        "phone": "โทร",
-        "receiver": "ผู้รับ",
-        "receive_date": "วันที่รับงาน",
-        "checklist": "เช็คลิสต์",
-        "remark": "หมายเหตุ"
-    })
     st.dataframe(df, use_container_width=True)
 
-    # ปุ่มพิมพ์ PDF
-    def generate_pdf(row):
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Helvetica", size=12)
-
-        pdf.cell(200, 10, txt="📋 ใบสั่งงาน", ln=True, align="C")
-        pdf.ln(10)
-
-        for col in row.index:
-            text = f"{col}: {row[col]}"
-            pdf.multi_cell(0, 10, text)
-
-        return pdf.output(dest="S").encode("latin1")
-
+    # แสดงปุ่มพิมพ์ PDF แถวล่าสุด
     latest_row = df.iloc[0]
-    pdf_data = generate_pdf(latest_row)
+    pdf_file = generate_pdf(latest_row)
 
-    b64 = base64.b64encode(pdf_data).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="work_order.pdf">🖨️ พิมพ์/ดาวน์โหลด PDF</a>'
-    st.markdown(href, unsafe_allow_html=True)
+    st.download_button(
+        label="🖨️ พิมพ์ / ดาวน์โหลด PDF",
+        data=pdf_file,
+        file_name="work_order.pdf",
+        mime="application/pdf"
+    )
 else:
-    st.info("ยังไม่มีข้อมูลที่บันทึกไว้")
+    st.info("ยังไม่มีข้อมูลที่บันทึก")
