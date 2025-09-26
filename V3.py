@@ -18,11 +18,14 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ===== DB Setup =====
+# ===== DB Setup (สร้างไฟล์ SQLite ใน repo) =====
 conn = sqlite3.connect("work_orders.db", check_same_thread=False)
 c = conn.cursor()
+
+# --- รีเซ็ตฐานข้อมูลใหม่ทุกครั้ง (กัน column mismatch) ---
+c.execute("DROP TABLE IF EXISTS work_orders")
 c.execute("""
-CREATE TABLE IF NOT EXISTS work_orders (
+CREATE TABLE work_orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     assigned_to TEXT,
     order_date TEXT,
@@ -88,46 +91,7 @@ with st.form("work_order_form", clear_on_submit=True):
 st.markdown("---")
 st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-query = """
-SELECT 
-    id,
-    ordered_by,
-    assigned_to,
-    order_date,
-    time,
-    contact,
-    company,
-    department,
-    address,
-    phone,
-    receiver,
-    receive_date,
-    checklist,
-    remark
-FROM work_orders
-ORDER BY id DESC
-"""
-
+query = "SELECT * FROM work_orders ORDER BY id DESC"
 df = pd.read_sql_query(query, conn)
-
-# ลบ id ออก ไม่ต้องแสดงในตาราง
-df = df.drop(columns=["id"])
-
-# เปลี่ยนชื่อหัวตารางเป็นภาษาไทย
-df = df.rename(columns={
-    "ordered_by": "ผู้สั่งงาน",
-    "assigned_to": "มอบหมายให้",
-    "order_date": "วันที่สั่งงาน",
-    "time": "เวลา",
-    "contact": "ติดต่อ",
-    "company": "บริษัท",
-    "department": "แผนก",
-    "address": "ที่อยู่",
-    "phone": "โทร",
-    "receiver": "ผู้รับ",
-    "receive_date": "วันที่รับงาน",
-    "checklist": "เช็คลิสต์",
-    "remark": "หมายเหตุ"
-})
 
 st.dataframe(df, use_container_width=True)
