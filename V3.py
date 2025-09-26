@@ -1,8 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+from fpdf import FPDF
 import datetime
 
 # ====== ตั้งรหัสสำหรับพิมพ์ ======
@@ -39,20 +38,22 @@ st.subheader("🔒 พิมพ์ใบสั่งงาน")
 password = st.text_input("กรอกรหัสเพื่อพิมพ์", type="password")
 if st.button("🖨️ พิมพ์ใบสั่งงาน"):
     if password == PRINT_PASSWORD:
-        # สร้างไฟล์ PDF
+        # สร้างไฟล์ PDF ด้วย fpdf
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Arial", size=14)
+        pdf.cell(200, 10, txt="📑 ใบสั่งงาน IK บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
+        pdf.ln(10)
+        pdf.cell(200, 10, txt=f"ผู้รับผิดชอบ: {driver}", ln=True)
+        pdf.cell(200, 10, txt=f"บริษัท: {company}", ln=True)
+        pdf.cell(200, 10, txt=f"ผู้ติดต่อ: {contact}", ln=True)
+        pdf.cell(200, 10, txt=f"เบอร์โทร: {phone}", ln=True)
+        pdf.cell(200, 10, txt=f"ผู้รับ: {receiver}", ln=True)
+        pdf.multi_cell(0, 10, txt=f"หมายเหตุ: {note}")
+        pdf.cell(200, 10, txt=f"วันที่: {datetime.date.today().isoformat()}", ln=True)
+
         pdf_file = "work_order.pdf"
-        c = canvas.Canvas(pdf_file, pagesize=A4)
-        c.setFont("Helvetica", 14)
-        c.drawString(100, 800, "📑 ใบสั่งงาน IK บริษัท อินะบาตะ ไทย จำกัด")
-        c.drawString(100, 770, f"ผู้รับผิดชอบ: {driver}")
-        c.drawString(100, 750, f"บริษัท: {company}")
-        c.drawString(100, 730, f"ผู้ติดต่อ: {contact}")
-        c.drawString(100, 710, f"เบอร์โทร: {phone}")
-        c.drawString(100, 690, f"ผู้รับ: {receiver}")
-        c.drawString(100, 670, f"หมายเหตุ: {note}")
-        c.drawString(100, 650, f"วันที่: {datetime.date.today().isoformat()}")
-        c.showPage()
-        c.save()
+        pdf.output(pdf_file)
 
         with open(pdf_file, "rb") as f:
             st.download_button("⬇️ ดาวน์โหลด PDF", f, file_name="work_order.pdf")
