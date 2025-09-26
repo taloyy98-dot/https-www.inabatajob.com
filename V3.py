@@ -1,92 +1,61 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from datetime import date
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+import datetime
 
-# ===== ตั้งค่าหน้า =====
-st.set_page_config(page_title="ฟอร์มใบสั่งงาน IK", page_icon="📄", layout="centered")
+# ====== ตั้งรหัสสำหรับพิมพ์ ======
+PRINT_PASSWORD = "1234"
 
-# ===== Header =====
-st.markdown(
-    """
-    <div style="text-align: center; padding: 20px;">
-        <h1 style="color:#2E86C1;">📋 ฟอร์มใบสั่งงาน</h1>
-        <h2 style="color:#117A65;">บริษัท อินะบาตะ ไทย จำกัด</h2>
-        <hr style="margin-top:20px; margin-bottom:20px;">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# ====== ฟอร์มกรอกข้อมูล ======
+st.title("📑 ฟอร์มใบสั่งงาน IK บริษัท อินะบาตะ ไทย จำกัด")
 
-# ===== DB Setup =====
-conn = sqlite3.connect("work_orders.db")
-c = conn.cursor()
-c.execute("""
-CREATE TABLE IF NOT EXISTS work_orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    assigned_to TEXT,
-    order_date TEXT,
-    time TEXT,
-    contact TEXT,
-    company TEXT,
-    department TEXT,
-    address TEXT,
-    phone TEXT,
-    ordered_by TEXT,
-    receiver TEXT,
-    receive_date TEXT,
-    checklist TEXT,
-    remark TEXT
-)
-""")
-conn.commit()
-
-# ===== ฟอร์มกรอกข้อมูล =====
-with st.form("work_order_form", clear_on_submit=True):
-    assigned_to = st.text_input("มอบหมายให้", "DRIVER TXE")
-    order_date = st.date_input("วันที่สั่งงาน", date.today())
-    time = st.text_input("เวลา")
-    contact = st.text_input("ติดต่อ")
-    company = st.text_input("บริษัท", "STI PRECISION")
-    department = st.text_input("แผนก")
-    address = st.text_area("ที่อยู่")
-    phone = st.text_input("โทร")
-    ordered_by = st.text_input("ผู้สั่งงาน", "SIRAPAT")
+with st.form("work_order_form"):
+    driver = st.text_input("ผู้รับผิดชอบ (Driver)")
+    company = st.text_input("บริษัท")
+    contact = st.text_input("ผู้ติดต่อ")
+    phone = st.text_input("เบอร์โทร")
     receiver = st.text_input("ผู้รับ")
-    receive_date = st.date_input("วันที่ (รับงาน)", date.today())
+    note = st.text_area("หมายเหตุ")
+    submit = st.form_submit_button("💾 บันทึกข้อมูล")
 
-    st.markdown("### ☑ รายการ")
-    checklist_options = [
-        "ส่งของ/เอกสาร/ตัวอย่าง",
-        "รับของ/เอกสาร/ตัวอย่าง",
-        "เซ็นรับใบกำกับภาษี รับสำเนากลับ 2 ใบ",
-        "เซ็นรับใบกำกับภาษีและวางบิล รับต้นฉบับใบวางบิล และสำเนาใบกำกับภาษีกลับ 1 ใบ",
-        "วางบิล รับต้นฉบับใบวางบิลกลับ",
-        "รับเช็ค ________ ใบ",
-        "อื่นๆ ________________________"
-    ]
-    checklist = st.multiselect("เลือก Checklist", checklist_options)
+# ====== บันทึกลง DB ======
+if submit:
+    conn = sqlite3.connect("work_orders.db")
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS work_orders
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  driver TEXT, company TEXT, contact TEXT,
+                  phone TEXT, receiver TEXT, note TEXT, date TEXT)''')
+    c.execute("INSERT INTO work_orders (driver, company, contact, phone, receiver, note, date) VALUES (?,?,?,?,?,?,?)",
+              (driver, company, contact, phone, receiver, note, datetime.date.today().isoformat()))
+    conn.commit()
+    conn.close()
+    st.success("✅ บันทึกข้อมูลเรียบร้อย")
 
-    remark = st.text_area("📝 หมายเหตุ / Remark")
+# ====== ปุ่มพิมพ์ พร้อมระบบใส่รหัส ======
+st.subheader("🔒 พิมพ์ใบสั่งงาน")
+password = st.text_input("กรอกรหัสเพื่อพิมพ์", type="password")
+if st.button("🖨️ พิมพ์ใบสั่งงาน"):
+    if password == PRINT_PASSWORD:
+        # สร้างไฟล์ PDF
+        pdf_file = "work_order.pdf"
+        c = canvas.Canvas(pdf_file, pagesize=A4)
+        c.setFont("Helvetica", 14)
+        c.drawString(100, 800, "📑 ใบสั่งงาน IK บริษัท อินะบาตะ ไทย จำกัด")
+        c.drawString(100, 770, f"ผู้รับผิดชอบ: {driver}")
+        c.drawString(100, 750, f"บริษัท: {company}")
+        c.drawString(100, 730, f"ผู้ติดต่อ: {contact}")
+        c.drawString(100, 710, f"เบอร์โทร: {phone}")
+        c.drawString(100, 690, f"ผู้รับ: {receiver}")
+        c.drawString(100, 670, f"หมายเหตุ: {note}")
+        c.drawString(100, 650, f"วันที่: {datetime.date.today().isoformat()}")
+        c.showPage()
+        c.save()
 
-    submitted = st.form_submit_button("✅ บันทึกข้อมูล")
-    if submitted:
-        c.execute("""
-        INSERT INTO work_orders (
-            assigned_to, order_date, time, contact, company, department,
-            address, phone, ordered_by, receiver, receive_date, checklist, remark
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            assigned_to, str(order_date), time, contact, company, department,
-            address, phone, ordered_by, receiver, str(receive_date),
-            ", ".join(checklist), remark
-        ))
-        conn.commit()
-        st.success("✅ บันทึกข้อมูลเรียบร้อยแล้ว!")
+        with open(pdf_file, "rb") as f:
+            st.download_button("⬇️ ดาวน์โหลด PDF", f, file_name="work_order.pdf")
 
-# ===== ดูข้อมูลที่บันทึกไว้ =====
-st.markdown("---")
-st.subheader("📑 ข้อมูลที่บันทึกไว้")
-
-df = pd.read_sql_query("SELECT * FROM work_orders ORDER BY id DESC", conn)
-st.dataframe(df, use_container_width=True)
+    else:
+        st.error("❌ รหัสผิด! กรุณาลองใหม่")
