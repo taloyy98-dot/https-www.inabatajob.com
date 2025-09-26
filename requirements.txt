@@ -7,4 +7,8 @@ python-dateutil
 streamlit
 pandas
 fpdf2
+streamlit
+pandas
+sqlite3-binary
+fpdf2
 
