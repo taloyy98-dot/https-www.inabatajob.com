@@ -3,7 +3,6 @@ import sqlite3
 import pandas as pd
 from datetime import date
 from fpdf import FPDF
-import io
 
 # ===== ตั้งค่าหน้า =====
 st.set_page_config(page_title="ฟอร์มใบสั่งงาน IK", page_icon="📄", layout="centered")
@@ -90,33 +89,31 @@ with st.form("work_order_form", clear_on_submit=True):
 st.markdown("---")
 st.subheader("📑 ข้อมูลที่บันทึกไว้")
 
-df = pd.read_sql_query("SELECT * FROM work_orders ORDER BY id DESC", conn)
+query = "SELECT * FROM work_orders ORDER BY id DESC"
+df = pd.read_sql_query(query, conn)
+st.dataframe(df, use_container_width=True)
 
+# ===== ฟังก์ชันสร้าง PDF =====
+def generate_pdf(row):
+    pdf = FPDF()
+    pdf.add_page()
+
+    # โหลดฟอนต์ไทย
+    pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
+    pdf.set_font("THSarabunNew", size=16)
+
+    pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
+    pdf.ln(10)
+
+    for col in row.index:
+        text = f"{col}: {row[col]}"
+        pdf.multi_cell(w=190, h=8, txt=text)
+
+    return pdf.output(dest="S").encode("latin-1")
+
+# ===== ปุ่มพิมพ์ (ดาวน์โหลด PDF) =====
 if not df.empty:
-    st.dataframe(df, use_container_width=True)
-
-    # ===== ฟังก์ชันสร้าง PDF =====
-    def generate_pdf(row):
-        pdf = FPDF()
-        pdf.add_page()
-
-        # ใช้ core font DejaVuSans สำหรับภาษาไทย
-        pdf.add_font("DejaVu", "", fname="DejaVuSans.ttf", uni=True)
-        pdf.set_font("DejaVu", size=12)
-
-        pdf.cell(200, 10, txt="📋 ใบสั่งงาน - บริษัท อินะบาตะ ไทย จำกัด", ln=True, align="C")
-        pdf.ln(10)
-
-        for col in row.index:
-            pdf.multi_cell(0, 10, txt=f"{col}: {row[col]}")
-
-        pdf_output = io.BytesIO()
-        pdf_bytes = pdf.output(dest="S").encode("latin1", "ignore")
-        pdf_output.write(pdf_bytes)
-        pdf_output.seek(0)
-        return pdf_output
-
-    latest_row = df.iloc[0]
+    latest_row = df.iloc[0]  # เอา row ล่าสุด
     pdf_file = generate_pdf(latest_row)
 
     st.download_button(
@@ -125,5 +122,3 @@ if not df.empty:
         file_name="work_order.pdf",
         mime="application/pdf"
     )
-else:
-    st.info("ยังไม่มีข้อมูลที่บันทึกไว้")
