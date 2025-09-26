@@ -2,7 +2,8 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 from datetime import date
-from fpdf import FPDF
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 import io
 
 # ===== ตั้งค่าหน้า =====
@@ -42,26 +43,6 @@ CREATE TABLE IF NOT EXISTS work_orders (
 )
 """)
 conn.commit()
-
-# ===== ฟังก์ชันสร้าง PDF =====
-def generate_pdf(row):
-    pdf = FPDF()
-    pdf.add_page()
-
-    # โหลดฟอนต์ Unicode
-    pdf.add_font("DejaVu", "", "DejaVuSans.ttf", uni=True)
-    pdf.set_font("DejaVu", size=12)
-
-    pdf.cell(200, 10, txt="📋 ใบสั่งงาน", ln=True, align="C")
-    pdf.ln(10)
-
-    for col in row.index:
-        text = f"{col}: {row[col]}"
-        pdf.multi_cell(0, 10, text)
-
-    # แปลง PDF เป็น Bytes
-    pdf_bytes = pdf.output(dest="S").encode("latin1")
-    return io.BytesIO(pdf_bytes)
 
 # ===== ฟอร์มกรอกข้อมูล =====
 with st.form("work_order_form", clear_on_submit=True):
@@ -116,15 +97,37 @@ df = pd.read_sql_query(query, conn)
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
-    # แสดงปุ่มพิมพ์ PDF แถวล่าสุด
+    # ===== ฟังก์ชันสร้าง PDF =====
+    def generate_pdf(row):
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+
+        # ตั้งค่า font (ใช้ Helvetica แทน)
+        c.setFont("Helvetica", 12)
+
+        # Header
+        c.drawString(200, 800, "📋 ใบสั่งงาน")
+        c.drawString(180, 780, "บริษัท อินะบาตะ ไทย จำกัด")
+        y = 750
+
+        for col in row.index:
+            text = f"{col}: {row[col]}"
+            c.drawString(50, y, text)
+            y -= 20
+
+        c.save()
+        buffer.seek(0)
+        return buffer
+
+    # ===== ปุ่มพิมพ์ =====
     latest_row = df.iloc[0]
-    pdf_file = generate_pdf(latest_row)
+    pdf_buffer = generate_pdf(latest_row)
 
     st.download_button(
-        label="🖨️ พิมพ์ / ดาวน์โหลด PDF",
-        data=pdf_file,
+        label="🖨️ พิมพ์ใบสั่งงาน (PDF)",
+        data=pdf_buffer,
         file_name="work_order.pdf",
         mime="application/pdf"
     )
 else:
-    st.info("ยังไม่มีข้อมูลที่บันทึก")
+    st.info("ยังไม่มีข้อมูลที่บันทึกไว้")
