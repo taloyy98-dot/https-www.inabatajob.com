@@ -97,24 +97,28 @@ def generate_pdf(row):
     pdf = FPDF()
     pdf.add_page()
 
-    # ฟอนต์ไทย
+    # โหลดฟอนต์ไทย (ต้องมีไฟล์ THSarabunNew.ttf)
     pdf.add_font("THSarabunNew", "", "THSarabunNew.ttf", uni=True)
-    pdf.set_font("THSarabunNew", size=16)
+    pdf.set_font("THSarabunNew", "B", 20)
 
     pdf.cell(0, 10, "📋 ใบสั่งงาน", ln=True, align="C")
     pdf.ln(5)
 
-    col_width = 50
-    row_height = 8
+    # กำหนดความกว้างคอลัมน์
+    col_w1 = 50   # คอลัมน์ซ้าย (ชื่อฟิลด์)
+    col_w2 = 130  # คอลัมน์ขวา (ค่า)
+    row_h = 10
 
+    pdf.set_font("THSarabunNew", "", 16)
+
+    # วาดตารางข้อมูล
     for col, value in row.items():
-        pdf.set_font("THSarabunNew", "B", 14)
-        pdf.cell(col_width, row_height, str(col), border=1)
-        pdf.set_font("THSarabunNew", "", 14)
-        pdf.multi_cell(0, row_height, str(value), border=1)
+        pdf.set_font("THSarabunNew", "B", 16)
+        pdf.cell(col_w1, row_h, str(col), border=1)
+        pdf.set_font("THSarabunNew", "", 16)
+        pdf.cell(col_w2, row_h, str(value), border=1, ln=True)
 
-    # ✅ คืนค่า bytes ตรงๆ
-    return pdf.output(dest="S")
+    return pdf.output(dest="S").encode("latin-1")
 
 # ===== ปุ่มพิมพ์ / ดาวน์โหลด PDF =====
 if not df.empty:
