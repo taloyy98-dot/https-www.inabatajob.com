@@ -1,20 +1,6 @@
-# Main framework
 streamlit
-
-# Database
-pandas
-sqlite3-binary
-
-# PDF Export
 fpdf
-reportlab
-
-# Excel Export
+pandas
 openpyxl
 xlsxwriter
-
-# Security (สำหรับการเข้ารหัสรหัสผ่าน ถ้าอยากทำ login)
-bcrypt
-
-# Utility
 python-dateutil
